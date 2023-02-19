@@ -1,6 +1,7 @@
 let store = {
     user: { name: "Student" },
     apod: '',
+    manifest: '',
     rovers: ['Curiosity', 'Opportunity', 'Spirit'],
 }
 
@@ -14,6 +15,7 @@ const updateStore = (store, newState) => {
 
 const render = async (root, state) => {
     root.innerHTML = App(state)
+    createListeners(state.rovers)
 }
 
 
@@ -26,8 +28,8 @@ const App = (state) => {
         <main>
             ${Greeting(store.user.name)}
             <section>
-                <h3>Put things on the page!</h3>
-                <p>Here is an example section.</p>
+                ${renderButtons(rovers)}
+                <div id="info"></div>
                 <p>
                     One of the most popular websites at NASA is the Astronomy Picture of the Day. In fact, this website is one of
                     the most popular websites across all federal agencies. It has the popular appeal of a Justin Bieber video.
@@ -48,7 +50,34 @@ window.addEventListener('load', () => {
     render(root, store)
 })
 
+const createListeners = (rovers) => {
+    rovers.forEach(r => {
+        $(`#${r}`).on('click', function(){
+            $('#info').empty()
+            fetch(`http://localhost:3000/manifest/${r}`)
+                .then(res => res.json())
+                .then(json => {
+                    $('#info').append(`
+                        <p>
+                        Launch Date: ${json.manifest.launch_date}<br>
+                        Landing Date Date: ${json.manifest.landing_date}<br>
+                        Status: ${json.manifest.status}<br>
+                        Last Photo: ${json.manifest.max_date}<br>
+                        Total Photos: ${json.manifest.total_photos}<br>
+                        </p>
+                    `)
+                })
+        })
+    })
+}
 // ------------------------------------------------------  COMPONENTS
+
+const renderButtons = (rovers) => {
+    $('#Curiosity').on('click', function(){
+        $('#info').append('<p>Hello Hello!</p>')
+    })
+    return rovers.map(x => `<button type="button" id="${x}">${x}</button>`).join('\r\n')
+}
 
 // Pure function that renders conditional information -- THIS IS JUST AN EXAMPLE, you can delete it.
 const Greeting = (name) => {
