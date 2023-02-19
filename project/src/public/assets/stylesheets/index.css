@@ -20,6 +20,21 @@ footer {
   /* footer styles */
 }
 
+div {
+  display: flex;
+  justify-content: center;
+}
+
+th {
+  text-align: center;
+}
+
+td:nth-child(odd) {
+  font-weight: bold;
+  padding-left: 8px;
+}
+
+
 /* -------------------  TABLET  --------------------- */
 @media (min-width: 768px) {
   /* use mobile */
