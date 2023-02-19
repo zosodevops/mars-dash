@@ -12,7 +12,6 @@ app.use(bodyParser.json())
 
 app.use('/', express.static(path.join(__dirname, '../public')))
 
-// your API calls
 
 // example API call
 app.get('/apod', async (req, res) => {
@@ -25,6 +24,7 @@ app.get('/apod', async (req, res) => {
     }
 })
 
+// Rover manifests to pull required information to display and narrow down img api call
 app.get('/manifest/curiosity', async (req,res) => {
     try {
         let url = `https://api.nasa.gov/mars-photos/api/v1/manifests/curiosity?api_key=${process.env.API_KEY}`
