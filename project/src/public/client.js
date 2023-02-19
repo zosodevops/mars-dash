@@ -55,18 +55,32 @@ const createListeners = (rovers) => {
         $(`#${r}`).on('click', function(){
             $('#info').empty()
             fetch(`http://localhost:3000/manifest/${r}`)
-                .then(res => res.json())
-                .then(json => {
-                    $('#info').append(`
-                        <p>
-                        Launch Date: ${json.manifest.launch_date}<br>
-                        Landing Date Date: ${json.manifest.landing_date}<br>
-                        Status: ${json.manifest.status}<br>
-                        Last Photo: ${json.manifest.max_date}<br>
-                        Total Photos: ${json.manifest.total_photos}<br>
-                        </p>
-                    `)
-                })
+            .then(res => res.json())
+            .then(json => {
+                $('#info').append(`
+                    <table>
+                    <thead>
+                        <tr>
+                            <th colspan="10">${json.manifest.name}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Launch Date</td>
+                            <td>${json.manifest.launch_date}</td>
+                            <td>Landing Date</td>
+                            <td>${json.manifest.landing_date}</td>
+                            <td>Status</td>
+                            <td>${json.manifest.status}</td>
+                            <td>Last Photo</td>
+                            <td>${json.manifest.max_date}</td>
+                            <td>Total Photos</td>
+                            <td>${json.manifest.total_photos}</td>
+                        </tr>
+                    </tbody>
+                    </table>
+                `)
+            })
         })
     })
 }
