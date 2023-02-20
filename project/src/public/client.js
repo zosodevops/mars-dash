@@ -1,7 +1,6 @@
 let store = {
     user: { name: "Student" },
     apod: '',
-    manifest: '',
     rovers: ['Curiosity', 'Opportunity', 'Spirit'],
 }
 
@@ -97,13 +96,6 @@ const createListeners = (rovers) => {
 }
 // ------------------------------------------------------  COMPONENTS
 
-const renderButtons = (rovers) => {
-    $('#Curiosity').on('click', function(){
-        $('#info').append('<p>Hello Hello!</p>')
-    })
-    return rovers.map(x => `<button type="button" id="${x}">${x}</button>`).join('\r\n')
-}
-
 // Pure function that renders conditional information -- THIS IS JUST AN EXAMPLE, you can delete it.
 const Greeting = (name) => {
     if (name) {
@@ -157,15 +149,3 @@ const getImageOfTheDay = (state) => {
 
     return data
 }
-
-/*
-<p>
-                    One of the most popular websites at NASA is the Astronomy Picture of the Day. In fact, this website is one of
-                    the most popular websites across all federal agencies. It has the popular appeal of a Justin Bieber video.
-                    This endpoint structures the APOD imagery and associated metadata so that it can be repurposed for other
-                    applications. In addition, if the concept_tags parameter is set to True, then keywords derived from the image
-                    explanation are returned. These keywords could be used as auto-generated hashtags for twitter or instagram feeds;
-                    but generally help with discoverability of relevant imagery.
-                </p>
-                ${ImageOfTheDay(apod)}
-*/
