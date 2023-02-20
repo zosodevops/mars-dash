@@ -50,37 +50,48 @@ window.addEventListener('load', () => {
     render(root, store)
 })
 
+async function getRoverManifest(rover) {
+    try {
+        const response = await fetch(`http://localhost:3000/manifest/${rover}`);
+        if (!response.ok) { 
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const { manifest } = await response.json();
+        return manifest
+    } catch (error) {
+        console.error(`Could not get manifest: ${error}`); 
+    }
+}
+
 const createListeners = (rovers) => {
-    rovers.forEach(r => {
-        $(`#${r}`).on('click', function(){
-            $('#info').empty()
-            fetch(`http://localhost:3000/manifest/${r}`)
-            .then(res => res.json())
-            .then(json => {
-                $('#info').append(`
-                    <table>
-                    <thead>
-                        <tr>
-                            <th colspan="10">${json.manifest.name}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Launch Date</td>
-                            <td>${json.manifest.launch_date}</td>
-                            <td>Landing Date</td>
-                            <td>${json.manifest.landing_date}</td>
-                            <td>Status</td>
-                            <td>${json.manifest.status}</td>
-                            <td>Last Photo</td>
-                            <td>${json.manifest.max_date}</td>
-                            <td>Total Photos</td>
-                            <td>${json.manifest.total_photos}</td>
-                        </tr>
-                    </tbody>
-                    </table>
-                `)
-            })
+    rovers.forEach(async r => {
+        const manifest = Immutable.Map({})
+        await getRoverManifest(r).then(x => Object.assign(manifest,x));
+        $('#info').append(`
+            <table id="table-${r}">
+                <thead>
+                <tr> <th colspan="10">${manifest.name}</th> </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Launch Date</td>
+                    <td>${manifest.launch_date}</td>
+                    <td>Landing Date</td>
+                    <td>${manifest.landing_date}</td>
+                    <td>Status</td>
+                    <td>${manifest.status}</td>
+                    <td>Latest Photos</td>
+                    <td>${manifest.max_date}</td>
+                    <td>Total Photos</td>
+                    <td>${manifest.total_photos}</td>
+                </tr>
+                </tbody>
+            </table>
+        `)
+        $(`#${r}`).on('click', async function(){
+            $('#info table').css({'display': 'none'});
+            $(`#table-${r}`).css({'display': 'block'});
         })
     })
 }
@@ -128,7 +139,7 @@ const ImageOfTheDay = (apod) => {
         `)
     } else {
         return (`
-            <img src="${apod.image.url}" height="350px" width="100%" />
+            <img src="${apod.image.url}" height="50%" width="50%" />
             <p>${apod.image.explanation}</p>
         `)
     }
@@ -146,3 +157,15 @@ const getImageOfTheDay = (state) => {
 
     return data
 }
+
+/*
+<p>
+                    One of the most popular websites at NASA is the Astronomy Picture of the Day. In fact, this website is one of
+                    the most popular websites across all federal agencies. It has the popular appeal of a Justin Bieber video.
+                    This endpoint structures the APOD imagery and associated metadata so that it can be repurposed for other
+                    applications. In addition, if the concept_tags parameter is set to True, then keywords derived from the image
+                    explanation are returned. These keywords could be used as auto-generated hashtags for twitter or instagram feeds;
+                    but generally help with discoverability of relevant imagery.
+                </p>
+                ${ImageOfTheDay(apod)}
+*/
