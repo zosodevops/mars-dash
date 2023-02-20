@@ -20,9 +20,13 @@ footer {
   /* footer styles */
 }
 
-div {
+#info {
   display: flex;
   justify-content: center;
+}
+
+#info table {
+  display: none;
 }
 
 th {
@@ -33,7 +37,6 @@ td:nth-child(odd) {
   font-weight: bold;
   padding-left: 8px;
 }
-
 
 /* -------------------  TABLET  --------------------- */
 @media (min-width: 768px) {
