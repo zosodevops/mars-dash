@@ -1,6 +1,7 @@
 let store = {
     user: { name: "Student" },
     apod: '',
+    manifest: '',
     rovers: ['Curiosity', 'Opportunity', 'Spirit'],
 }
 
@@ -49,18 +50,8 @@ window.addEventListener('load', () => {
     render(root, store)
 })
 
-async function getRoverManifest(rover) {
-    try {
-        const response = await fetch(`http://localhost:3000/manifest/${rover}`);
-        if (!response.ok) { 
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-
-        const { manifest } = await response.json();
-        return manifest
-    } catch (error) {
-        console.error(`Could not get manifest: ${error}`); 
-    }
+const renderButtons = (rovers) => {
+    return rovers.map(x => `<button type="button" id="${x}">${x}</button>`).join('\r\n')
 }
 
 const createListeners = (rovers) => {
@@ -95,7 +86,6 @@ const createListeners = (rovers) => {
     })
 }
 // ------------------------------------------------------  COMPONENTS
-
 // Pure function that renders conditional information -- THIS IS JUST AN EXAMPLE, you can delete it.
 const Greeting = (name) => {
     if (name) {
@@ -115,9 +105,9 @@ const ImageOfTheDay = (apod) => {
     // If image does not already exist, or it is not from today -- request it again
     const today = new Date()
     const photodate = new Date(apod.date)
-    console.log(photodate.getDate(), today.getDate());
+    // console.log(photodate.getDate(), today.getDate());
 
-    console.log(photodate.getDate() === today.getDate());
+    // console.log(photodate.getDate() === today.getDate());
     if (!apod || apod.date === today.getDate() ) {
         getImageOfTheDay(store)
     }
@@ -131,7 +121,7 @@ const ImageOfTheDay = (apod) => {
         `)
     } else {
         return (`
-            <img src="${apod.image.url}" height="50%" width="50%" />
+            <img src="${apod.image.url}" height="50%" width="100%" />
             <p>${apod.image.explanation}</p>
         `)
     }
@@ -147,5 +137,17 @@ const getImageOfTheDay = (state) => {
         .then(res => res.json())
         .then(apod => updateStore(store, { apod }))
 
-    return data
+    // return data
 }
+
+async function getRoverManifest(rover) {
+    try {
+        const response = await fetch(`http://localhost:3000/manifest?rover=${rover.toLowerCase()}`);
+        if (!response.ok) { throw new Error(`HTTP Error: ${response.status}`); }
+        const { manifest } = await response.json();
+        return manifest;
+    } catch (error) {
+        console.error(`Could not get manifest: ${error}`); 
+    }
+}
+

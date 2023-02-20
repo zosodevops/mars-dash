@@ -25,37 +25,27 @@ app.get('/apod', async (req, res) => {
 })
 
 // Rover manifests to pull required information to display and narrow down img api call
-app.get('/manifest/curiosity', async (req,res) => {
+app.get('/manifest', async (req,res) => {
     try {
-        let url = `https://api.nasa.gov/mars-photos/api/v1/manifests/curiosity?api_key=${process.env.API_KEY}`
+        let rover = req.query.rover
+        let url = `https://api.nasa.gov/mars-photos/api/v1/manifests/${rover}?api_key=${process.env.API_KEY}`
         let manifest = await fetch(url)
             .then(res => res.json())
-            .then(json => json.photo_manifest)
-        res.send({ manifest })
+            .then(json => json.photo_manifest);
+        res.send({ manifest });
     } catch (err) {
         console.log('error:', err);
     }
 })
 
-app.get('/manifest/opportunity', async (req,res) => {
+app.get('/photos', async (req,res) => {
     try {
-        let url = `https://api.nasa.gov/mars-photos/api/v1/manifests/opportunity?api_key=${process.env.API_KEY}`
-        let manifest = await fetch(url)
-            .then(res => res.json())
-            .then(json => json.photo_manifest)
-        res.send({ manifest })
-    } catch (err) {
-        console.log('error:', err);
-    }
-})
-
-app.get('/manifest/spirit', async (req,res) => {
-    try {
-        let url = `https://api.nasa.gov/mars-photos/api/v1/manifests/spirit?api_key=${process.env.API_KEY}`
-        let manifest = await fetch(url)
-            .then(res => res.json())
-            .then(json => json.photo_manifest)
-        res.send({ manifest })
+        let rover = req.query.rover
+        let date = req.query.earth_date
+        let url = `https://api.nasa.gov/mars-photos/api/v1/rovers/${rover}/photos` +
+                  `?earth_date=${date}&api_key=${process.env.API_KEY}`
+        let photos = await fetch(url).then(res => res.json()).then(json => json.photos);
+        res.send({ photos });
     } catch (err) {
         console.log('error:', err);
     }
