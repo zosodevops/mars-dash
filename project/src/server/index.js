@@ -41,7 +41,7 @@ app.get('/manifest', async (req,res) => {
 app.get('/photos', async (req,res) => {
     try {
         let rover = req.query.rover
-        let date = req.query.earth_date
+        let date = req.query.date
         let url = `https://api.nasa.gov/mars-photos/api/v1/rovers/${rover}/photos` +
                   `?earth_date=${date}&api_key=${process.env.API_KEY}`
         let photos = await fetch(url).then(res => res.json()).then(json => json.photos);

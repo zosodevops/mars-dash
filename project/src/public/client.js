@@ -1,153 +1,197 @@
 let store = {
-    user: { name: "Student" },
-    apod: '',
-    manifest: '',
-    rovers: ['Curiosity', 'Opportunity', 'Spirit'],
+  user: { name: "Student" },
+  apod: '',
+  rovers: ['Curiosity', 'Opportunity', 'Spirit'],
 }
 
 // add our markup to the page
 const root = document.getElementById('root')
 
 const updateStore = (store, newState) => {
-    store = Object.assign(store, newState)
-    render(root, store)
+  store = Object.assign(store, newState)
+  render(root, store)
 }
 
 const render = async (root, state) => {
-    root.innerHTML = App(state)
-    createListeners(state.rovers)
+  root.innerHTML = App(state)
+  createListeners(state.rovers)
 }
-
 
 // create content
 const App = (state) => {
-    let { rovers, apod } = state
+  let { rovers, apod } = state
 
-    return `
-        <header></header>
-        <main>
-            ${Greeting(store.user.name)}
-            <section>
-                ${renderButtons(rovers)}
-                <div id="info"></div>
-                <p>
-                    One of the most popular websites at NASA is the Astronomy Picture of the Day. In fact, this website is one of
-                    the most popular websites across all federal agencies. It has the popular appeal of a Justin Bieber video.
-                    This endpoint structures the APOD imagery and associated metadata so that it can be repurposed for other
-                    applications. In addition, if the concept_tags parameter is set to True, then keywords derived from the image
-                    explanation are returned. These keywords could be used as auto-generated hashtags for twitter or instagram feeds;
-                    but generally help with discoverability of relevant imagery.
-                </p>
-                ${ImageOfTheDay(apod)}
-            </section>
-        </main>
-        <footer></footer>
-    `
+  return `
+    <header></header>
+    <main>
+      <h1>MARS Rover Dashboard</h1>
+      <section>
+        ${ImageOfTheDay(apod)}
+        <h2> Select a Rover to view its latest photos and information </h2>
+        <div id="buttons">${renderButtons(rovers)}</div>
+        <br><br>
+        <div id="info"></div>
+        <br>
+        <div id="gallery" class="gallery"></div>
+      </section>
+    </main>
+    <footer></footer>
+  `
 }
 
 // listening for load event because page should load before any JS is called
 window.addEventListener('load', () => {
-    render(root, store)
+  render(root, store)
 })
 
 const renderButtons = (rovers) => {
-    return rovers.map(x => `<button type="button" id="${x}">${x}</button>`).join('\r\n')
+  return rovers.map(x => `<button class="button-on button-alt" type="button" id="${x}">${x}</button>`).join('\r\n')
 }
 
 const createListeners = (rovers) => {
-    rovers.forEach(async r => {
-        const manifest = Immutable.Map({})
-        await getRoverManifest(r).then(x => Object.assign(manifest,x));
-        $('#info').append(`
-            <table id="table-${r}">
-                <thead>
-                <tr> <th colspan="10">${manifest.name}</th> </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>Launch Date</td>
-                    <td>${manifest.launch_date}</td>
-                    <td>Landing Date</td>
-                    <td>${manifest.landing_date}</td>
-                    <td>Status</td>
-                    <td>${manifest.status}</td>
-                    <td>Latest Photos</td>
-                    <td>${manifest.max_date}</td>
-                    <td>Total Photos</td>
-                    <td>${manifest.total_photos}</td>
-                </tr>
-                </tbody>
-            </table>
-        `)
-        $(`#${r}`).on('click', async function(){
-            $('#info table').css({'display': 'none'});
-            $(`#table-${r}`).css({'display': 'block'});
-        })
+  rovers.forEach(async r => {
+    // Add manifests to store
+    const manifest = await getManifest(r);
+    Object.assign(store, {[r]: manifest});
+    // Add tables with manifest info, hidden by default
+    $('#info').append( infoTable(manifest) )
+    // Button listeners for reover selection
+    $(`#${r}`).on('click', async function(){
+      // Reset button styles and toggle for selected button
+      rovers.map(x => $(`#${x}`).addClass('button-alt'));
+      $(this).toggleClass('button-alt')
+      // Reset info table styles and show selected rover
+      $('#info table').css({'display': 'none'});
+      $(`#table-${r}`).css({'display': 'flex'});
+      // Reset gallery container and generate slideshow for selected rover
+      $('#gallery').empty().css({'display': 'block'});
+      const album = await getPhotos(r, store[r].max_date)
+      Object.assign(store, {['photos']: album.photos})
+      Object.assign(store, {['slide']: 0})
+      $('#gallery').append(`
+        ${imageSlides(store.photos)}
+        <a class="prev" onclick="nextSlide(-1)">&#10094</a>
+        <a class="next" onclick="nextSlide(1)">&#10095</a>`
+      )
+      showSlide(store.slide);
     })
+  })
 }
-// ------------------------------------------------------  COMPONENTS
-// Pure function that renders conditional information -- THIS IS JUST AN EXAMPLE, you can delete it.
-const Greeting = (name) => {
-    if (name) {
-        return `
-            <h1>Welcome, ${name}!</h1>
-        `
-    }
 
-    return `
-        <h1>Hello!</h1>
-    `
+const infoTable = (manifest) => {
+  return `
+    <table id="table-${manifest.name}">
+      <tbody>
+        <tr>
+          <td>Launch Date</td>
+          <td>${manifest.launch_date}</td>
+          <td>Landing Date</td>
+          <td>${manifest.landing_date}</td>
+          <td>Status</td>
+          <td>${manifest.status}</td>
+          <td>Latest Photos</td>
+          <td>${manifest.max_date}</td>
+          <td>Total Photos</td>
+          <td>${manifest.total_photos}</td>
+        </tr>
+      </tbody>
+  </table>`
 }
+
+const imageSlides = (photos) => {
+  return photos.map((p,i,a) => {
+    return `
+    <div class="img-slide animate">
+      <img src="${p.img_src}">
+      <div class="count-text">${i+1} / ${a.length}</div>  
+      <div class="caption-text">${p.camera.name}: ${p.camera.full_name} photo</div>
+    </div>
+  `}).join('\r\n');
+}
+
+/*
+ * onclick function for slideshow gallery 
+ */
+const nextSlide = (n) => {
+  const newSlide = store.slide += n
+  if (newSlide >= store.photos.length) { Object.assign(store, {['slide']: 0})}
+  if (newSlide < 0) { Object.assign(store, {['slide']: store.photos.length - 1})}
+
+  showSlide(store.slide);
+}
+
+const showSlide = n => {
+  $('.img-slide').each(function() { $(this).css('display','none') });
+  $('.img-slide')[n].style = 'display:block';
+}
+
 
 // Example of a pure function that renders infomation requested from the backend
 const ImageOfTheDay = (apod) => {
 
-    // If image does not already exist, or it is not from today -- request it again
-    const today = new Date()
-    const photodate = new Date(apod.date)
-    // console.log(photodate.getDate(), today.getDate());
+  // If image does not already exist, or it is not from today -- request it again
+  const today = new Date()
+  const photodate = new Date(apod.date)
+  // console.log(photodate.getDate(), today.getDate());
 
-    // console.log(photodate.getDate() === today.getDate());
-    if (!apod || apod.date === today.getDate() ) {
-        getImageOfTheDay(store)
-    }
+  // console.log(photodate.getDate() === today.getDate());
+  if (!apod || apod.date === today.getDate() ) {
+    getImageOfTheDay(store)
+  }
 
-    // check if the photo of the day is actually type video!
-    if (apod.media_type === "video") {
-        return (`
-            <p>See today's featured video <a href="${apod.url}">here</a></p>
-            <p>${apod.title}</p>
-            <p>${apod.explanation}</p>
-        `)
-    } else {
-        return (`
-            <img src="${apod.image.url}" height="50%" width="100%" />
-            <p>${apod.image.explanation}</p>
-        `)
-    }
+  // check if the photo of the day is actually type video!
+  if (apod.media_type === "video") {
+    return (`
+      <p>See today's featured video <a href="${apod.url}">here</a></p>
+      <p>${apod.title}</p>
+      <p>${apod.explanation}</p>
+    `)
+  } else {
+    return (`
+      <table style="width:100%">
+        <tr>
+          <td style="width:50%; padding:15px;">
+            <h2> Astronomy Pic of the Day </h2>
+            <p>${apod.image.explanation}</p></td>    
+          <td><img src="${apod.image.url}" style="max-width:100%;"/></td>
+        </tr>
+      </table>
+    `)
+  }
 }
 
 // ------------------------------------------------------  API CALLS
 
 // Example API call
 const getImageOfTheDay = (state) => {
-    let { apod } = state
+  let { apod } = state
 
-    fetch(`http://localhost:3000/apod`)
-        .then(res => res.json())
-        .then(apod => updateStore(store, { apod }))
+  fetch(`http://localhost:3000/apod`)
+    .then(res => res.json())
+    .then(apod => updateStore(store, { apod }))
 
-    // return data
+  // return data
 }
 
-async function getRoverManifest(rover) {
-    try {
-        const response = await fetch(`http://localhost:3000/manifest?rover=${rover.toLowerCase()}`);
-        if (!response.ok) { throw new Error(`HTTP Error: ${response.status}`); }
-        const { manifest } = await response.json();
-        return manifest;
-    } catch (error) {
-        console.error(`Could not get manifest: ${error}`); 
-    }
+async function getManifest(rover) {
+  try {
+    const response = await fetch(`http://localhost:3000/manifest?rover=${rover.toLowerCase()}`);
+    if (!response.ok) { throw new Error(`HTTP Error: ${response.status}`); }
+    const { manifest } = await response.json();
+    return manifest;
+  } catch (err) {
+    console.error(`Could not get manifest: ${err}`); 
+  }
 }
 
+async function getPhotos(rover,date) {
+  try {
+    // console.log(`Looking up photos from ${rover} on ${date}`);
+    const response = await fetch(`http://localhost:3000/photos?rover=${rover}&date=${date}`);
+    if (!response.ok) { throw new Error(`HTTP Error: ${response.status}`); }
+    const photoshoot = await response.json();
+    return photoshoot;
+  } catch (err) {
+    console.error(`Could not get photos: ${err}`)
+  }
+}
