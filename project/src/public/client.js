@@ -28,7 +28,7 @@ const App = (state) => {
       <section>
         ${ImageOfTheDay(apod)}
         <h2> Select a Rover to view its latest photos and information </h2>
-        <div id="buttons">${renderButtons(rovers)}</div>
+        <div id="buttons">${renderHTML(roverButton,rovers)}</div>
         <br><br>
         <div id="info"></div>
         <br>
@@ -44,17 +44,13 @@ window.addEventListener('load', () => {
   render(root, store)
 })
 
-const renderButtons = (rovers) => {
-  return rovers.map(x => `<button class="button-on button-alt" type="button" id="${x}">${x}</button>`).join('\r\n')
-}
-
 const createListeners = (rovers) => {
   rovers.forEach(async r => {
     // Add manifests to store
     const manifest = await getManifest(r);
     Object.assign(store, {[r]: manifest});
     // Add tables with manifest info, hidden by default
-    $('#info').append( infoTable(manifest) )
+    $('#info').append( renderHTML(infoTable,manifest) )
     // Button listeners for reover selection
     $(`#${r}`).on('click', async function(){
       // Reset button styles and toggle for selected button
@@ -69,15 +65,30 @@ const createListeners = (rovers) => {
       Object.assign(store, {['photos']: album.photos})
       Object.assign(store, {['slide']: 0})
       $('#gallery').append(`
-        ${imageSlides(store.photos)}
-        <a class="prev" onclick="nextSlide(-1)">&#10094</a>
-        <a class="next" onclick="nextSlide(1)">&#10095</a>`
+        ${renderHTML(imageSlide,store.photos)}
+        <a class="prev" onclick="nextSlide(showSlide,-1)">&#10094</a>
+        <a class="next" onclick="nextSlide(showSlide,1)">&#10095</a>`
       )
       showSlide(store.slide);
     })
   })
 }
 
+// HOF to render items' html
+const renderHTML = (func, obj) => {
+  if (Array.isArray(obj)) {
+    return obj.map(func).join("");
+  }
+
+  return func(obj);
+}
+
+// Callback to create button elements
+const roverButton = (name) => {
+  return `<button class="button-on button-alt" type="button" id="${name}">${name}</button>`
+}
+
+// Callback to create table with rover manifest data
 const infoTable = (manifest) => {
   return `
     <table id="table-${manifest.name}">
@@ -95,24 +106,20 @@ const infoTable = (manifest) => {
           <td>${manifest.total_photos}</td>
         </tr>
       </tbody>
-  </table>`
+    </table>`
 }
-
-const imageSlides = (photos) => {
-  return photos.map((p,i,a) => {
-    return `
+// Callback to create image slide with buttons and captions text
+const imageSlide = (photo, index, album) => {
+  return `
     <div class="img-slide animate">
-      <img src="${p.img_src}">
-      <div class="count-text">${i+1} / ${a.length}</div>  
-      <div class="caption-text">${p.camera.name}: ${p.camera.full_name} photo</div>
-    </div>
-  `}).join('\r\n');
+      <img src="${photo.img_src}">
+      <div class="count-text">${index+1} / ${album.length}</div>  
+      <div class="caption-text">${photo.camera.name}: ${photo.camera.full_name} photo</div>
+    </div>`
 }
 
-/*
- * onclick function for slideshow gallery 
- */
-const nextSlide = (n) => {
+// HOF for onClick action on image slides
+const nextSlide = (showSlide,n) => {
   const newSlide = store.slide += n
   if (newSlide >= store.photos.length) { Object.assign(store, {['slide']: 0})}
   if (newSlide < 0) { Object.assign(store, {['slide']: store.photos.length - 1})}
@@ -153,7 +160,7 @@ const ImageOfTheDay = (apod) => {
           <td style="width:50%; padding:15px;">
             <h2> Astronomy Pic of the Day </h2>
             <p>${apod.image.explanation}</p></td>    
-          <td><img src="${apod.image.url}" style="max-width:100%;"/></td>
+          <td><img src="${apod.image.url}" style="max-height:500px;max-width:100%;"/></td>
         </tr>
       </table>
     `)
